@@ -8,12 +8,20 @@ import os
 # --- 1. 認証・API設定 ---
 # Secretsから情報を読み込む
 # --- 1. 認証設定 ---
+# 最新のライブラリでは secret_credentials という名前でまとめて渡す必要があります
 auth = Authenticate(
-    client_id=st.secrets["GOOGLE_CLIENT_ID"],
-    client_secret=st.secrets["GOOGLE_CLIENT_SECRET"],
-    redirect_uri=st.secrets["REDIRECT_URI"],
+    secret_credentials={
+        "web": {
+            "client_id": st.secrets["GOOGLE_CLIENT_ID"],
+            "client_secret": st.secrets["GOOGLE_CLIENT_SECRET"],
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+            "redirect_uris": [st.secrets["REDIRECT_URI"]],
+        }
+    },
     cookie_name="eiyaku_auth_cookie",
-    key=st.secrets["AUTH_SECRET_KEY"], # 'secret_key' を 'key' に変更
+    cookie_key=st.secrets["AUTH_SECRET_KEY"],
 )
 # ログインチェック
 auth.check_authenticity()
