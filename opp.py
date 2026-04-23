@@ -10,7 +10,7 @@ import os
 # --- 1. 認証設定 ---
 # 最新のライブラリでは secret_credentials という名前でまとめて渡す必要があります
 auth = Authenticate(
-    secret_credentials={
+    credentials={
         "web": {
             "client_id": st.secrets["GOOGLE_CLIENT_ID"],
             "client_secret": st.secrets["GOOGLE_CLIENT_SECRET"],
