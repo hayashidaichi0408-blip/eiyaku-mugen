@@ -8,30 +8,12 @@ import os
 # --- 1. 認証・API設定 ---
 # Secretsから情報を読み込む
 # --- 1. 認証設定 ---
-# --- 1. 認証設定（ファイルしか受け付けないバージョン用） ---
-import tempfile
-
-# Secretsの内容を一時的にJSONファイルに書き出す
-credentials_info = {
-    "web": {
-        "client_id": st.secrets["GOOGLE_CLIENT_ID"],
-        "client_secret": st.secrets["GOOGLE_CLIENT_SECRET"],
-        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-        "token_uri": "https://oauth2.googleapis.com/token",
-        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-        "redirect_uris": [st.secrets["REDIRECT_URI"]],
-    }
-}
-
-# 一時ファイルを作ってそのパスを渡す
-with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json") as temp_file:
-    json.dump(credentials_info, temp_file)
-    temp_credentials_path = temp_file.name
-
+# --- 1. 認証設定（最新の引数ルールに合わせる） ---
 auth = Authenticate(
     secret_credentials_path=temp_credentials_path,
     cookie_name="eiyaku_auth_cookie",
     cookie_key=st.secrets["AUTH_SECRET_KEY"],
+    redirect_uri=st.secrets["REDIRECT_URI"], # ← これを追加！
 )
 # ログインチェック
 auth.check_authenticity()
