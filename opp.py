@@ -34,8 +34,8 @@ auth = Authenticate(
     cookie_key=st.secrets["AUTH_SECRET_KEY"],
     redirect_uri=st.secrets["REDIRECT_URI"], # ← これを追加！
 )
-# ログインチェック（ここを書き換えます）
-auth.check_login_status()
+
+
 
 if not st.session_state.get("connected"):
     st.title("🚀 無限英訳サバイバル")
