@@ -1,12 +1,36 @@
 import streamlit as st
+from streamlit_google_auth import Authenticate # 追加
 from google import genai
 from data import DATA
 import json
 import os
 
-# --- 復習ノートの保存・読み込み関数 ---
-SAVE_FILE = "notes.json"
+# --- 1. 認証・API設定 ---
+# Secretsから情報を読み込む
+auth = Authenticate(
+    secret_key=st.secrets["AUTH_SECRET_KEY"],
+    client_id=st.secrets["GOOGLE_CLIENT_ID"],
+    client_secret=st.secrets["GOOGLE_CLIENT_SECRET"],
+    redirect_uri=st.secrets["REDIRECT_URI"],
+    cookie_name="eiyaku_auth_cookie",
+)
 
+# ログインチェック
+auth.check_authenticity()
+
+if not st.session_state.get("connected"):
+    st.title("🚀 無限英訳サバイバル")
+    st.write("学習を始めるにはGoogleアカウントでログインしてください。")
+    auth.login()
+    st.stop()
+
+# ユーザー情報の取得
+user_email = st.session_state["user_info"]["email"]
+user_name = st.session_state["user_info"]["name"]
+
+# --- 復習ノートの保存・読み込み関数 (ユーザー別に修正) ---
+# ファイル名をユーザーごとにユニークにする
+SAVE_FILE = f"notes_{user_email}.json"
 
 def load_notes():
     if os.path.exists(SAVE_FILE):
@@ -14,13 +38,11 @@ def load_notes():
             return json.load(f)
     return []
 
-
 def save_notes(notes):
     with open(SAVE_FILE, "w", encoding="utf-8") as f:
         json.dump(notes, f, ensure_ascii=False, indent=4)
 
-
-# --- 1. API設定 ---
+# Gemini API設定
 API_KEY = st.secrets["GEMINI_API_KEY"]
 client = genai.Client(api_key=API_KEY)
 
@@ -29,6 +51,7 @@ st.set_page_config(page_title="無限英訳", layout="centered")
 # --- 2. セッション状態の初期化 ---
 if 'saved_notes' not in st.session_state:
     st.session_state.saved_notes = load_notes()
+# (以下、元のコードと同じ)
 if 'cleared' not in st.session_state:
     st.session_state.cleared = {}
 if 'max_q_idx' not in st.session_state:
@@ -42,7 +65,11 @@ for s in states:
 # --- 3. サイドバー ---
 with st.sidebar:
     st.title("メニュー")
+    st.write(f"👤 {user_name}") # 名前を表示
     mode = st.radio("モード選択", ["問題演習", "復習ノート"])
+    
+    if st.button("🚪 ログアウト"):
+        auth.logout()
 
     st.divider()
     if st.button("🏠 最初に戻る"):
