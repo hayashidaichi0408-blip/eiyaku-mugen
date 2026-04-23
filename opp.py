@@ -1,46 +1,42 @@
 import streamlit as st
-from streamlit_google_auth import Authenticate # 追加
+#from streamlit_google_auth import Authenticate # 追加
 from google import genai
 from data import DATA
 import json
 import os
+import requests  # ← これを追加
 
-# --- 1. 認証・API設定 ---
-# Secretsから情報を読み込む
-# --- 1. 認証設定（ファイルしか受け付けないバージョン用） ---
-import tempfile
+# --- 1. 認証設定（直接リンク方式） ---
+def get_login_url():
+    client_id = st.secrets["GOOGLE_CLIENT_ID"]
+    redirect_uri = st.secrets["REDIRECT_URI"]
+    scope = "https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile"
+    url = (
+        f"https://accounts.google.com/o/oauth2/v2/auth?"
+        f"response_type=code&client_id={client_id}&"
+        f"redirect_uri={redirect_uri}&scope={scope}&"
+        f"access_type=offline&prompt=select_account"
+    )
+    return url
 
-# Secretsの内容を一時的にJSONファイルに書き出す
-credentials_info = {
-    "web": {
-        "client_id": st.secrets["GOOGLE_CLIENT_ID"],
-        "client_secret": st.secrets["GOOGLE_CLIENT_SECRET"],
-        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-        "token_uri": "https://oauth2.googleapis.com/token",
-        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-        "redirect_uris": [st.secrets["REDIRECT_URI"]],
-    }
-}
+# ログイン状態の確認
+if "connected" not in st.session_state:
+    st.session_state.connected = False
 
-# 一時ファイルを作ってそのパスを渡す
-with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json") as temp_file:
-    json.dump(credentials_info, temp_file)
-    temp_credentials_path = temp_file.name
-
-# --- 1. 認証設定（最新の引数ルールに合わせる） ---
-auth = Authenticate(
-    secret_credentials_path=temp_credentials_path,
-    cookie_name="eiyaku_auth_cookie",
-    cookie_key=st.secrets["AUTH_SECRET_KEY"],
-    redirect_uri=st.secrets["REDIRECT_URI"], # ← これを追加！
-)
-
-
-
-if not st.session_state.get("connected"):
+if not st.session_state.connected:
     st.title("🚀 無限英訳サバイバル")
     st.write("学習を始めるにはGoogleアカウントでログインしてください。")
-    auth.login()
+    
+    # ログインボタン（リンク）を表示
+    login_url = get_login_url()
+    st.markdown(f'<a href="{login_url}" target="_self" style="text-decoration:none; background-color:#4285F4; color:white; padding:12px 24px; border-radius:5px; font-weight:bold;">Googleでログインする</a>', unsafe_allow_html=True)
+    
+    # URLにcodeが含まれていたら「ログインボタンを押して戻ってきた」と判断
+    if "code" in st.query_params:
+        # ※本来はここで名前を取得しますが、まずは「403が出ないか」を確認！
+        st.session_state.connected = True
+        st.session_state["user_info"] = {"email": "test@example.com", "name": "User"} # 仮のデータ
+        st.rerun()
     st.stop()
 
 # ユーザー情報の取得
