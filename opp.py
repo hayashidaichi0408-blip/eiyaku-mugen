@@ -7,14 +7,14 @@ import os
 
 # --- 1. 認証・API設定 ---
 # Secretsから情報を読み込む
+# --- 1. 認証設定 ---
 auth = Authenticate(
-    secret_key=st.secrets["AUTH_SECRET_KEY"],
     client_id=st.secrets["GOOGLE_CLIENT_ID"],
     client_secret=st.secrets["GOOGLE_CLIENT_SECRET"],
     redirect_uri=st.secrets["REDIRECT_URI"],
     cookie_name="eiyaku_auth_cookie",
+    key=st.secrets["AUTH_SECRET_KEY"], # 'secret_key' を 'key' に変更
 )
-
 # ログインチェック
 auth.check_authenticity()
 
