@@ -355,3 +355,4 @@ elif mode == "問題演習":
                         st.session_state.section = None
                         st.rerun()
 #  https://english-opp-lczytel8teegbpzptqgwe9.streamlit.app/
+#https://eiyaku-mugen.streamlit.app/
