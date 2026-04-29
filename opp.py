@@ -24,20 +24,25 @@ def load_notes():
     if "user_info" not in st.session_state:
         return []
     try:
-        # スプレッドシートから全データを読み込む
+        # 1. スプレッドシートを読み込む
         df = conn.read(worksheet="Sheet1")
         
-        # ログイン中のユーザーのメールアドレスを取得
-        user_email = st.session_state["user_info"]["email"]
+        # もしシートが空っぽだったら、空のデータを返す
+        if df.empty:
+            return pd.DataFrame()
+
+        # 2. ログイン中の自分のメールアドレスを取得（小文字に揃える）
+        user_email = str(st.session_state["user_info"]["email"]).strip().lower()
         
-        # 【重要】email列がログイン中のメールアドレスと一致するものだけを抽出
-        # 文字列として比較するために .astype(str) を入れるとより確実です
-        user_df = df[df['email'].astype(str) == str(user_email)]
+        # 3. シートの 'email' 列も小文字＆スペース削除して比較
+        # こうすることで、"Daichi@..." と "daichi@..." のズレを防ぎます
+        user_df = df[df['email'].astype(str).str.strip().str.lower() == user_email]
         
-        return user_df.to_dict('records')
+        return user_df
+
     except Exception as e:
-        # エラーが起きたら空のリストを返す
-        return []
+        st.error(f"読み込みエラーが発生しました: {e}")
+        return pd.DataFrame()
 
 def save_data_to_sheets(q, ans, advice, keypoint, source):
     try:
