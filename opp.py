@@ -193,7 +193,7 @@ if mode == "復習ノート":
     notes = load_notes()
 
     # .empty を使うのが Pandas の正しいマナーです
-   if notes.empty:
+    if notes.empty:
         st.info("まだ復習ノートにデータがありません。")
     else:
         # 1. pinned列がない場合に備えて補完（Pandas流の書き方）
