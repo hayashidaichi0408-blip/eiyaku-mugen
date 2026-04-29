@@ -191,52 +191,52 @@ if mode == "復習ノート":
     notes = st.session_state.saved_notes
     
     # --- 復習ノートの表示エリア ---
-notes = load_notes()
-
-# 修正ポイント1: notes が DataFrame なので .empty で判定する
-if notes is None or notes.empty:
-    st.info("まだ復習ノートにデータがありません。新しく作成して保存してみましょう！")
-else:
-    # 修正ポイント2: pinned列がない場合に備えて補完
-    if 'pinned' not in notes.columns:
-        notes['pinned'] = False
+    notes = load_notes()
+    
+    # 修正ポイント1: notes が DataFrame なので .empty で判定する
+    if notes is None or notes.empty:
+        st.info("まだ復習ノートにデータがありません。新しく作成して保存してみましょう！")
     else:
-        notes['pinned'] = notes['pinned'].fillna(False)
-
-    # 修正ポイント3: お気に入り(pinned=True)を上に並べ替え
-    notes = notes.sort_values(by='pinned', ascending=False)
-
-    st.caption(f"現在 {len(notes)} 問保存されています。📌マークを付けると一番上に表示されます。")
-
-    # 修正ポイント4: index と row を使ってループを回す
-    for index, row in notes.iterrows():
-        # row['pinned'] が True ならピンを表示
-        pin_icon = "📌 " if row.get('pinned', False) else ""
-        
-        with st.expander(f"{pin_icon}{row['q']}"):
-            st.caption(f"出典: {row['source']}")
-
-            # お気に入りボタン（今は見た目だけですが、エラー回避のために配置）
-            btn_label = "📌 お気に入り解除" if row.get('pinned', False) else "📍 お気に入りに追加"
-            if st.button(btn_label, key=f"pin_{index}"):
-                st.toast("お気に入り機能は次のステップで完全実装します！")
-                st.rerun()
-
-            st.info(f"**問題（和訳対象）:**\n{row['q']}")
-            st.success(f"**正解例:**\n{row['ans']}")
-
-            tab1, tab2 = st.tabs(["💡 解説・添削", "📌 ポイント"])
-            with tab1:
-                st.write(row['advice'])
-            with tab2:
-                st.write(row['keypoint'])
-
-            st.divider()
-
-            # 削除ボタン（スプレッドシート側は手動で消してもらう案内）
-            if st.button(f"🗑️ 削除", key=f"del_{index}"):
-                st.warning("スプレッドシートから直接データを削除してください。")
-    st.stop()
+        # 修正ポイント2: pinned列がない場合に備えて補完
+        if 'pinned' not in notes.columns:
+            notes['pinned'] = False
+        else:
+            notes['pinned'] = notes['pinned'].fillna(False)
+    
+        # 修正ポイント3: お気に入り(pinned=True)を上に並べ替え
+        notes = notes.sort_values(by='pinned', ascending=False)
+    
+        st.caption(f"現在 {len(notes)} 問保存されています。📌マークを付けると一番上に表示されます。")
+    
+        # 修正ポイント4: index と row を使ってループを回す
+        for index, row in notes.iterrows():
+            # row['pinned'] が True ならピンを表示
+            pin_icon = "📌 " if row.get('pinned', False) else ""
+            
+            with st.expander(f"{pin_icon}{row['q']}"):
+                st.caption(f"出典: {row['source']}")
+    
+                # お気に入りボタン（今は見た目だけですが、エラー回避のために配置）
+                btn_label = "📌 お気に入り解除" if row.get('pinned', False) else "📍 お気に入りに追加"
+                if st.button(btn_label, key=f"pin_{index}"):
+                    st.toast("お気に入り機能は次のステップで完全実装します！")
+                    st.rerun()
+    
+                st.info(f"**問題（和訳対象）:**\n{row['q']}")
+                st.success(f"**正解例:**\n{row['ans']}")
+    
+                tab1, tab2 = st.tabs(["💡 解説・添削", "📌 ポイント"])
+                with tab1:
+                    st.write(row['advice'])
+                with tab2:
+                    st.write(row['keypoint'])
+    
+                st.divider()
+    
+                # 削除ボタン（スプレッドシート側は手動で消してもらう案内）
+                if st.button(f"🗑️ 削除", key=f"del_{index}"):
+                    st.warning("スプレッドシートから直接データを削除してください。")
+        st.stop()
 
 elif mode == "問題演習":
     # 学年選択
