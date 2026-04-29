@@ -168,7 +168,7 @@ with st.sidebar:
     mode = st.radio("モード選択", ["問題演習", "復習ノート"])
     
     if st.button("🚪 ログアウト"):
-        auth.logout()
+        logout()  # ← 「auth.」を消して、自作の logout() を呼ぶようにします
 
     st.divider()
     if st.button("🏠 最初に戻る"):
