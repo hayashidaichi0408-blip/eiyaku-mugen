@@ -15,8 +15,8 @@ import yaml
 from yaml.loader import SafeLoader
 
 # 設定ファイルを読み込む処理
-with open('config.yaml') as file:
-    config = yaml.load(file, Loader=SafeLoader)
+# ファイルを開くのではなく、Secretsから直接読み込む
+config = st.secrets["auth_config"]
 
 # ここで auth オブジェクトを作っている必要があります
 auth = stauth.Authenticate(
