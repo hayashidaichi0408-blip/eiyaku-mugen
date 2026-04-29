@@ -229,31 +229,33 @@ if mode == "復習ノート":
     
     # --- 復習ノートの表示エリア ---
     for index, row in notes.iterrows():
-                # 文字列にして取得
-                val = str(row.get('favorite', ""))
+            # お気に入り判定（文字のTRUE、数字の1、どちらも対応）
+            val = str(row.get('favorite', "")).upper()
+            is_already_true = (val == "TRUE" or val == "1" or val == "1.0")
+            
+            pin_icon = "📌 " if is_already_true else ""
+            
+            # --- ここから expander (折りたたみ) の開始 ---
+            with st.expander(f"{pin_icon}{row['q']}"):
+                # ボタンを横に並べる [お気に入り, 削除, 余白]
+                col_fav, col_del, col_empty = st.columns([2.5, 2, 4])
                 
-                # 「TRUE」という文字、または「1」や「1.0」になっていても「お気に入り」と判定する
-                is_already_true = (val.upper() == "TRUE" or val == "1" or val == "1.0")
+                with col_fav:
+                    if is_already_true:
+                        if st.button("📌 解除", key=f"unfav_{index}"):
+                            toggle_favorite(row['q'], "TRUE")
+                    else:
+                        if st.button("📍 お気に入り", key=f"fav_{index}"):
+                            toggle_favorite(row['q'], "")
                 
-                pin_icon = "📌 " if is_already_true else ""
-                
-                with st.expander(f"{pin_icon}{row['q']}"):
-                    col_fav, col_del, col_empty = st.columns([2, 2, 4])
-                    
-                    with col_fav:
-                        if is_already_true:
-                            # お気に入り済みの判定が通れば、こっちのボタンが出る
-                            if st.button("📌 解除", key=f"unfav_{index}"):
-                                toggle_favorite(row['q'], "TRUE")
-                        else:
-                            # そうでなければ、こっちが出る
-                            if st.button("📍 お気に入り", key=f"fav_{index}"):
-                                toggle_favorite(row['q'], "")
-                            
+                with col_del:
+                    # 削除ボタンを確実に配置
+                    if st.button("🗑️ 削除", key=f"del_{index}"):
+                        delete_note(row['q'])
 
-                # 以下、詳細表示
+                # --- 以下の項目が「expanderの中」にあることが重要（インデントを揃える） ---
                 st.caption(f"出典: {row['source']}")
-                st.info(f"**問題:**\n{row['q']}")
+                st.info(f"**問題（和訳対象）:**\n{row['q']}")
                 st.success(f"**正解例:**\n{row['ans']}")
                 
                 tab1, tab2 = st.tabs(["💡 解説・添削", "📌 ポイント"])
@@ -261,9 +263,10 @@ if mode == "復習ノート":
                     st.write(row['advice'])
                 with tab2:
                     st.write(row['keypoint'])
-                # st.divider() は削除済み
-                
-                # ここにあった st.divider() は削除しまし
+            # --- ここまで expander の中身 ---
+
+        # 全てのループが終わったら stop
+      
     st.stop()
 
 elif mode == "問題演習":
