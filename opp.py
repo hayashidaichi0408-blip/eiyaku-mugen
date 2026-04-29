@@ -9,6 +9,19 @@ import streamlit as st
 from streamlit_gsheets import GSheetsConnection # ←【追加】一番上の方に
 import pandas as pd
 
+# --- 例：authを作っている部分 ---
+import streamlit_authenticator as stauth
+
+# ここで auth オブジェクトを作っている必要があります
+auth = stauth.Authenticate(
+    config['credentials'],
+    config['cookie']['name'],
+    config['cookie']['key'],
+    config['cookie']['expiry_days']
+)
+
+# これがあるから、下の方で auth.logout() が使えるようになります
+
 # --- 接続設定（関数の外、上の方に書く） ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
