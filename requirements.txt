@@ -1,4 +1,5 @@
 google-genai
 streamlit-google-auth
 st-gsheets-connection
+google-auth
 pandas
