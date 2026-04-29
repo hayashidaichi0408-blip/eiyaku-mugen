@@ -42,39 +42,41 @@ def load_notes():
         return pd.DataFrame()
 
 def toggle_favorite(target_q, current_val):
-    try:
-        all_df = conn.read(worksheet="Sheet1")
-        user_email = st.session_state["user_info"]["email"]
-        
-        mask = (all_df['email'] == user_email) & (all_df['q'] == target_q)
-        
-        # 文字列として扱い、nan（空）を排除
-        all_df['favorite'] = all_df['favorite'].astype(str).replace('nan', '')
-        
-        # 現在が "TRUE" なら空に、そうでなければ "TRUE" に書き換える
-        new_val = "" if str(current_val).upper() == "TRUE" else "TRUE"
-        all_df.loc[mask, 'favorite'] = new_val
-        
-        conn.update(worksheet="Sheet1", data=all_df)
-        st.cache_data.clear()
-        st.rerun()
-    except Exception as e:
-        st.error(f"お気に入りの更新に失敗しました: {e}")
+    with st.spinner("お気に入りを更新中..."):
+        try:
+            all_df = conn.read(worksheet="Sheet1")
+            user_email = st.session_state["user_info"]["email"]
+            
+            if 'favorite' not in all_df.columns:
+                all_df['favorite'] = ""
+            all_df['favorite'] = all_df['favorite'].fillna("").astype(str)
+            
+            mask = (all_df['email'] == user_email) & (all_df['q'] == target_q)
+            
+            if str(current_val).upper() == "TRUE":
+                all_df.loc[mask, 'favorite'] = ""
+            else:
+                all_df.loc[mask, 'favorite'] = "TRUE"
+            
+            conn.update(worksheet="Sheet1", data=all_df)
+            st.cache_data.clear()
+            st.rerun()
+        except Exception as e:
+            st.error(f"エラーが発生しました: {e}")
 
 def delete_note(target_q):
-    try:
-        all_df = conn.read(worksheet="Sheet1")
-        user_email = st.session_state["user_info"]["email"]
-        
-        # 削除対象以外の行だけを残す（フィルタリング）
-        new_df = all_df[~((all_df['email'] == user_email) & (all_df['q'] == target_q))]
-        
-        # スプレッドシートを更新
-        conn.update(worksheet="Sheet1", data=new_df)
-        st.cache_data.clear()
-        st.rerun()
-    except Exception as e:
-        st.error(f"削除に失敗しました: {e}")
+    with st.spinner("データを削除中..."):
+        try:
+            all_df = conn.read(worksheet="Sheet1")
+            user_email = st.session_state["user_info"]["email"]
+            
+            new_df = all_df[~((all_df['email'] == user_email) & (all_df['q'] == target_q))]
+            
+            conn.update(worksheet="Sheet1", data=new_df)
+            st.cache_data.clear()
+            st.rerun()
+        except Exception as e:
+            st.error(f"削除に失敗しました: {e}")
         
 def save_data_to_sheets(q, ans, advice, keypoint, source):
     try:
