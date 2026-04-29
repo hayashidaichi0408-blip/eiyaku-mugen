@@ -236,20 +236,21 @@ if mode == "復習ノート":
             pin_icon = "📌 " if fav_status == "TRUE" else ""
             
             with st.expander(f"{pin_icon}{row['q']}"):
-                # 横に3分割（お気に入りボタン：削除ボタン：空きスペース）
-                # 比率を [3, 1, 4] くらいにすると、削除ボタンが右側に寄って小さく見えます
+                # ① ここで横割りを設定
                 col_fav, col_del, col_empty = st.columns([3, 1, 4])
                 
+                # ② お気に入りボタン（col_favの中にインデントして入れる）
                 with col_fav:
                     btn_label = "📌 解除" if fav_status == "TRUE" else "📍 お気に入り"
                     if st.button(btn_label, key=f"fav_{index}"):
                         toggle_favorite(row['q'], fav_status)
                 
+                # ③ 削除ボタン（col_delの中にインデントして入れる）
                 with col_del:
-                    # ゴミ箱マークで小さく配置
-                    if st.button("🗑️", key=f"del_{index}"):
+                    if st.button("🗑️", key=f"del_{index}"): # ← ここの行頭スペースに注意！
                         st.warning("スプレッドシートから直接削除してください。")
 
+                # ④ 以下、既存の解説部分（with st.expander の中の高さに揃える）
                 st.caption(f"出典: {row['source']}")
                 st.info(f"**問題:**\n{row['q']}")
                 # ...（以下、正解例などの表示はそのまま）...
