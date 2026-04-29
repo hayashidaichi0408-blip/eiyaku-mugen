@@ -5,3 +5,4 @@ google-auth
 pandas
 streamlit
 streamlit-authenticator
+PyYAML
