@@ -266,7 +266,7 @@ if mode == "復習ノート":
                 # st.divider() は削除済み
                 
                 # ここにあった st.divider() は削除しまし
-        st.stop()
+    st.stop()
 
 elif mode == "問題演習":
     # 学年選択
