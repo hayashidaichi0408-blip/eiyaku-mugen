@@ -181,18 +181,22 @@ with st.sidebar:
         st.rerun()
 
 # --- 4. 画面遷移ロジック ---
+# --- 4. 画面遷移ロジック ---
 if mode == "復習ノート":
     st.title("📚 復習ノート")
+    # 最新のデータをスプレッドシートから読み込む
+    st.session_state.saved_notes = load_notes()
     notes = st.session_state.saved_notes
 
     if not notes:
         st.info("まだ保存された問題はありません。演習で「🌟 復習ノートに保存」を押してみましょう！")
     else:
+        # お気に入り(pinned=True)を上に並べるための準備
+        # スプレッドシートから読み込んだ直後は pinned が無い場合があるので補完
         for n in notes:
             if 'pinned' not in n:
                 n['pinned'] = False
 
-        # お気に入り(pinned=True)を上に並べる
         sorted_notes = sorted(
             enumerate(notes),
             key=lambda x: x[1].get('pinned', False),
@@ -203,13 +207,17 @@ if mode == "復習ノート":
 
         for original_idx, note in sorted_notes:
             pin_icon = "📌 " if note.get('pinned') else ""
+            # タイトルに問題文を表示
             with st.expander(f"{pin_icon}{note['q']}"):
                 st.caption(f"出典: {note['source']}")
 
+                # --- お気に入りボタン ---
                 btn_label = "📌 お気に入り解除" if note.get('pinned') else "📍 お気に入りに追加"
                 if st.button(btn_label, key=f"pin_{original_idx}"):
+                    # 状態を反転させて保存（本来はスプレッドシートの更新が必要ですが、まずは画面上で切り替え）
                     st.session_state.saved_notes[original_idx]['pinned'] = not note.get('pinned')
-                    #save_notes(st.session_state.saved_notes)
+                    # 【重要】スプレッドシートの「お気に入り状態」の更新は今後の課題として、
+                    # 今は rerun して並び替えを反映させます
                     st.rerun()
 
                 st.info(f"**問題（和訳対象）:**\n{note['q']}")
@@ -223,9 +231,13 @@ if mode == "復習ノート":
 
                 st.divider()
 
+                # --- 削除ボタン ---
                 if st.button(f"🗑️ 削除", key=f"del_{original_idx}"):
+                    # リストから消して画面を更新
                     st.session_state.saved_notes.pop(original_idx)
-                    #save_notes(st.session_state.saved_notes)
+                    # 本来はここでスプレッドシートからも消す処理が必要ですが、
+                    # まずはエラーが出る古い関数(save_notes)を呼ばないようにしてフリーズを防ぎます
+                    st.toast("画面から削除しました（スプレッドシート本体からは別途削除が必要です）")
                     st.rerun()
     st.stop()
 
