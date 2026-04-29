@@ -1,53 +1,49 @@
 import streamlit as st
-#from streamlit_google_auth import Authenticate # 追加
 from google import genai
 from data import DATA
 import json
 import os
-import requests  # ← これを追加
-import streamlit as st
-from streamlit_gsheets import GSheetsConnection # ←【追加】一番上の方に
+import requests
+from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
-# 認証用の auth オブジェクトは不要になったので削除し、
-# ログアウト時にセッションをクリアするだけの処理にします。
+# ログアウト処理
 def logout():
     st.session_state.connected = False
     st.session_state["user_info"] = None
     st.rerun()
-# --- 接続設定（関数の外、上の方に書く） ---
+
+# --- 接続設定 ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 # --- データの読み書き（スプレッドシート専用版） ---
 
 def load_notes():
     if "user_info" not in st.session_state:
-        return []
+        return pd.DataFrame()
     try:
-            # スプレッドシートを読み込む（PandasのDataFrameが返ってきます）
-            df = conn.read(worksheet="Sheet1")
-            
-            if df is None or df.empty:
-                return pd.DataFrame()
-    
-            # ログイン中のユーザーのメールアドレスを取得（念のため小文字に統一）
-            user_email = str(st.session_state["user_info"]["email"]).strip().lower()
-            
-            # email列が自分のアドレスと一致するものだけを抽出
-            # .str.strip().str.lower() を入れることで、保存時の微妙なズレも許容します
-            user_df = df[df['email'].astype(str).str.strip().str.lower() == user_email]
-            
-            return user_df
-        except Exception as e:
-            # エラーが起きたら画面に表示
-            st.error(f"データの読み込み中にエラーが発生しました: {e}")
+        # スプレッドシートを読み込む
+        df = conn.read(worksheet="Sheet1")
+        
+        if df is None or df.empty:
             return pd.DataFrame()
+
+        # ログイン中のユーザーのメールアドレスを取得
+        user_email = str(st.session_state["user_info"]["email"]).strip().lower()
+        
+        # 自分の一致するものだけを抽出
+        user_df = df[df['email'].astype(str).str.strip().str.lower() == user_email]
+        
+        return user_df
+    except Exception as e:
+        st.error(f"データの読み込み中にエラーが発生しました: {e}")
+        return pd.DataFrame()
 
 def save_data_to_sheets(q, ans, advice, keypoint, source):
     try:
-        st.write("デバッグ: 保存開始") # これを一時的に追加
+        # デバッグ用メッセージ
+        # st.write("デバッグ: 保存開始") 
         df = conn.read(worksheet="Sheet1")
-        st.write("デバッグ: 読み込み完了") # これを一時的に追加
         
         new_row = pd.DataFrame([{
             "email": st.session_state["user_info"]["email"],
@@ -64,9 +60,9 @@ def save_data_to_sheets(q, ans, advice, keypoint, source):
     except Exception as e:
         import traceback
         st.error(f"保存エラーの詳細: {type(e).__name__}")
-        st.code(traceback.format_exc()) # これでエラーの裏側を全部表示します
+        st.code(traceback.format_exc())
 
-# --- 1. 認証設定（直接リンク方式） ---
+# --- 認証設定 ---
 def get_login_url():
     client_id = st.secrets["GOOGLE_CLIENT_ID"]
     redirect_uri = st.secrets["REDIRECT_URI"]
@@ -78,7 +74,6 @@ def get_login_url():
         f"access_type=offline&prompt=select_account"
     )
     return url
-    
 
 # ログイン状態の確認
 if "connected" not in st.session_state:
