@@ -1,0 +1,7 @@
+[client]
+# 右上の「Running...」などのメッセージを最小限にする
+toolbarMode = "minimal"
+
+[ui]
+# 開発者向けの情報を隠す
+hideSidebarNav = true
