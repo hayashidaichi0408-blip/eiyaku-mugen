@@ -46,9 +46,12 @@ def toggle_favorite(target_q, current_val):
         all_df = conn.read(worksheet="Sheet1")
         user_email = st.session_state["user_info"]["email"]
         
+        # 該当する行を探す
         mask = (all_df['email'] == user_email) & (all_df['q'] == target_q)
         
-        # 「TRUE」という文字を書き込むか、消すか
+        # ★修正ポイント：列全体を一度「文字列型」に強制変換する（エラー回避）
+        all_df['favorite'] = all_df['favorite'].astype(str).replace('nan', '')
+        
         new_val = "" if current_val == "TRUE" else "TRUE"
         all_df.loc[mask, 'favorite'] = new_val
         
@@ -57,7 +60,7 @@ def toggle_favorite(target_q, current_val):
         st.rerun()
     except Exception as e:
         st.error(f"お気に入りの更新に失敗しました: {e}")
-
+        
 def save_data_to_sheets(q, ans, advice, keypoint, source):
     try:
         # デバッグ用メッセージ
@@ -229,30 +232,36 @@ if mode == "復習ノート":
     
         # 修正ポイント4: index と row を使ってループを回す
         for index, row in notes.iterrows():
-                    # --- 1. 文字の状態を取得 ---
-                fav_status = str(row.get('favorite', ""))
-                pin_icon = "📌 " if fav_status == "TRUE" else ""
-                    
-                with st.expander(f"{pin_icon}{row['q']}"):
-                    st.caption(f"出典: {row['source']}")
+            fav_status = str(row.get('favorite', ""))
+            pin_icon = "📌 " if fav_status == "TRUE" else ""
             
-                        # --- 2. お気に入りボタンのラベル判定 ---
-                    btn_label = "📌 お気に入り解除" if fav_status == "TRUE" else "📍 お気に入りに追加"
-                        
-                        # --- 3. ボタンが押された時の処理 ---
+            with st.expander(f"{pin_icon}{row['q']}"):
+                # 横に3分割（お気に入りボタン：削除ボタン：空きスペース）
+                # 比率を [3, 1, 4] くらいにすると、削除ボタンが右側に寄って小さく見えます
+                col_fav, col_del, col_empty = st.columns([3, 1, 4])
+                
+                with col_fav:
+                    btn_label = "📌 解除" if fav_status == "TRUE" else "📍 お気に入り"
                     if st.button(btn_label, key=f"fav_{index}"):
-                        toggle_favorite(row['q'], fav_status) # ここで作った関数を呼ぶ
-            
-                    st.info(f"**問題（和訳対象）:**\n{row['q']}")
-                    st.success(f"**正解例:**\n{row['ans']}")
-            
-                    tab1, tab2 = st.tabs(["💡 解説・添削", "📌 ポイント"])
-                    with tab1:
-                        st.write(row['advice'])
-                    with tab2:
-                        st.write(row['keypoint'])
-            
-                    st.divider()
+                        toggle_favorite(row['q'], fav_status)
+                
+                with col_del:
+                    # ゴミ箱マークで小さく配置
+                    if st.button("🗑️", key=f"del_{index}"):
+                        st.warning("スプレッドシートから直接削除してください。")
+
+                st.caption(f"出典: {row['source']}")
+                st.info(f"**問題:**\n{row['q']}")
+                # ...（以下、正解例などの表示はそのまま）...
+                st.success(f"**正解例:**\n{row['ans']}")
+        
+                tab1, tab2 = st.tabs(["💡 解説・添削", "📌 ポイント"])
+                with tab1:
+                    st.write(row['advice'])
+                with tab2:
+                    st.write(row['keypoint'])
+        
+            st.divider()
     
                 # 削除ボタン（スプレッドシート側は手動で消してもらう案内）
                 if st.button(f"🗑️ 削除", key=f"del_{index}"):
