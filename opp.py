@@ -406,6 +406,7 @@ elif mode == "問題演習":
                         st.error(f"エラー: {e}")
 
         # 結果表示
+        # 結果表示
         if st.session_state.last_res:
             res = st.session_state.last_res
             if res["score"] >= 8:
@@ -422,12 +423,17 @@ elif mode == "問題演習":
             with st.expander("正答例を表示"):
                 st.code(res['answer'], language="text")
 
-            if st.button("🌟 復習ノートに保存"):
-                is_already_saved = any(note['q'] == current_q for note in st.session_state.saved_notes)
-                if is_already_saved:
-                    st.warning("⚠️ この問題は既に保存されています。")
-                else:
-                    # スプレッドシートに保存する関数を呼び出す
+            # --- 保存チェックとボタン ---
+            notes = load_notes()
+            if not notes.empty:
+                is_already_saved = current_q in notes['q'].values
+            else:
+                is_already_saved = False
+
+            if is_already_saved:
+                st.warning("⚠️ この問題は既に保存されています。")
+            else:
+                if st.button("🌟 復習ノートに保存"):
                     save_data_to_sheets(
                         current_q, 
                         res['answer'], 
@@ -435,14 +441,23 @@ elif mode == "問題演習":
                         res['keypoint'],
                         f"{st.session_state.grade} > {st.session_state.level} > {st.session_state.chapter}"
                     )
-                    # 保存後に画面上のリストも最新にする
-                    st.session_state.saved_notes = load_notes()
+                    st.cache_data.clear() # キャッシュをクリア
+                    st.rerun() # 画面を更新して「保存済み」にする
 
+            # --- 次へ進むボタン ---
             if res["score"] >= 8:
                 if q_idx + 1 < len(questions):
                     if st.button("合格！次の問題へ進む ➡️", key="next_after_win"):
                         st.session_state.q_idx += 1
                         st.session_state.last_res = None
+                        st.rerun()
+                else:
+                    sec_key = f"{st.session_state.grade}_{st.session_state.level}_{st.session_state.chapter}_{st.session_state.section}"
+                    st.session_state.cleared[sec_key] = True
+                    st.balloons()
+                    st.success("🎉 この節のすべての問題をクリアしました！")
+                    if st.button("🎉 章選択に戻る"):
+                        st.session_state.section = None
                         st.rerun()
                 else:
                     sec_key = f"{st.session_state.grade}_{st.session_state.level}_{st.session_state.chapter}_{st.session_state.section}"
