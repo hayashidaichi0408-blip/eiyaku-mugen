@@ -59,7 +59,7 @@ def toggle_favorite(target_q, current_val):
                 all_df.loc[mask, 'favorite'] = "TRUE"
             
             conn.update(worksheet="Sheet1", data=all_df)
-            st.cache_data.clear()
+            #st.cache_data.clear()
             st.rerun()
         except Exception as e:
             st.error(f"エラーが発生しました: {e}")
