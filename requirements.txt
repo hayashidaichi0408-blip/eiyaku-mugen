@@ -3,3 +3,5 @@ streamlit-google-auth
 st-gsheets-connection
 google-auth
 pandas
+streamlit
+streamlit-authenticator
