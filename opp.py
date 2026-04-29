@@ -19,24 +19,20 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 # --- データの読み書き（スプレッドシート専用版） ---
 
 def load_notes():
-    if "user_info" not in st.session_state:
+    # ログインしていない、または user_info が空なら、エラーを出さずに空の表を返す
+    if "user_info" not in st.session_state or st.session_state["user_info"] is None:
         return pd.DataFrame()
+    
     try:
-        # スプレッドシートを読み込む
         df = conn.read(worksheet="Sheet1")
-        
         if df is None or df.empty:
             return pd.DataFrame()
 
-        # ログイン中のユーザーのメールアドレスを取得
         user_email = str(st.session_state["user_info"]["email"]).strip().lower()
-        
-        # 自分の一致するものだけを抽出
         user_df = df[df['email'].astype(str).str.strip().str.lower() == user_email]
-        
         return user_df
-    except Exception as e:
-        st.error(f"データの読み込み中にエラーが発生しました: {e}")
+    except Exception:
+        # ログイン前などはここを通る可能性があるが、画面にエラーを出さない
         return pd.DataFrame()
 
 def save_data_to_sheets(q, ans, advice, keypoint, source):
@@ -424,13 +420,21 @@ elif mode == "問題演習":
                 st.code(res['answer'], language="text")
 
             # --- 保存チェックとボタン ---
+            # 最新の状況を読み込む
             notes = load_notes()
+            
+            # すでに保存済みかチェック
             if not notes.empty:
                 is_already_saved = current_q in notes['q'].values
             else:
                 is_already_saved = False
 
-            if is_already_saved:
+            # セッションに「今保存したよ」というフラグがあるか確認
+            just_saved = st.session_state.get(f"just_saved_{q_idx}", False)
+
+            if just_saved:
+                st.success("✅ 復習ノートに保存しました！")
+            elif is_already_saved:
                 st.warning("⚠️ この問題は既に保存されています。")
             else:
                 if st.button("🌟 復習ノートに保存"):
@@ -441,9 +445,10 @@ elif mode == "問題演習":
                         res['keypoint'],
                         f"{st.session_state.grade} > {st.session_state.level} > {st.session_state.chapter}"
                     )
-                    st.cache_data.clear() # キャッシュをクリア
-                    st.rerun() # 画面を更新して「保存済み」にする
-
+                    # 保存したことを一時的に記憶させる
+                    st.session_state[f"just_saved_{q_idx}"] = True
+                    st.cache_data.clear()
+                    st.rerun()
             # --- 次へ進むボタン ---
             if res["score"] >= 8:
                 if q_idx + 1 < len(questions):
