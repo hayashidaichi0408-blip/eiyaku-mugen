@@ -58,7 +58,9 @@ def save_data_to_sheets(q, ans, advice, keypoint, source):
         conn.update(worksheet="Sheet1", data=updated_df)
         st.toast("スプレッドシートに保存しました！")
     except Exception as e:
-        st.error(f"保存エラー: {e}") # eの中身をしっかり表示
+        import traceback
+        st.error(f"保存エラーの詳細: {type(e).__name__}")
+        st.code(traceback.format_exc()) # これでエラーの裏側を全部表示します
 
 # --- 1. 認証設定（直接リンク方式） ---
 def get_login_url():
