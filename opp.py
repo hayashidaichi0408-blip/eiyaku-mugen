@@ -46,13 +46,13 @@ def toggle_favorite(target_q, current_val):
         all_df = conn.read(worksheet="Sheet1")
         user_email = st.session_state["user_info"]["email"]
         
-        # 該当する行を探す
         mask = (all_df['email'] == user_email) & (all_df['q'] == target_q)
         
-        # ★修正ポイント：列全体を一度「文字列型」に強制変換する（エラー回避）
+        # 文字列として扱い、nan（空）を排除
         all_df['favorite'] = all_df['favorite'].astype(str).replace('nan', '')
         
-        new_val = "" if current_val == "TRUE" else "TRUE"
+        # 現在が "TRUE" なら空に、そうでなければ "TRUE" に書き換える
+        new_val = "" if str(current_val).upper() == "TRUE" else "TRUE"
         all_df.loc[mask, 'favorite'] = new_val
         
         conn.update(worksheet="Sheet1", data=all_df)
@@ -228,47 +228,32 @@ if mode == "復習ノート":
     notes = st.session_state.saved_notes
     
     # --- 復習ノートの表示エリア ---
-    notes = load_notes()
-    
-    # 修正ポイント1: notes が DataFrame なので .empty で判定する
-    if notes is None or notes.empty:
-        st.info("まだ復習ノートにデータがありません。新しく作成して保存してみましょう！")
-    else:
-        # 修正ポイント2: pinned列がない場合に備えて補完
-        if 'pinned' not in notes.columns:
-            notes['pinned'] = False
-        else:
-            notes['pinned'] = notes['pinned'].fillna(False)
-    
-        # 修正ポイント3: お気に入り(pinned=True)を上に並べ替え
-        notes = notes.sort_values(by='pinned', ascending=False)
-    
-        st.caption(f"現在 {len(notes)} 問保存されています。📌マークを付けると一番上に表示されます。")
-    
-        # 修正ポイント4: index と row を使ってループを回す
-        for index, row in notes.iterrows():
-            fav_status = str(row.get('favorite', ""))
-            pin_icon = "📌 " if fav_status == "TRUE" else ""
+    for index, row in notes.iterrows():
+            # 大文字小文字の揺れを防ぐため upper() で判定
+            fav_status = str(row.get('favorite', "")).upper()
+            is_fav = (fav_status == "TRUE")
+            
+            pin_icon = "📌 " if is_fav else ""
             
             with st.expander(f"{pin_icon}{row['q']}"):
-                # ボタンを横に並べる（比率 2:2:4 で右側を空ける）
                 col_fav, col_del, col_empty = st.columns([2, 2, 4])
                 
                 with col_fav:
-                    # お気に入り状態によってボタンを出し分け
-                    if fav_status == "TRUE":
+                    # ここで確実に出し分けます
+                    if is_fav:
+                        # お気に入り済みの時は「解除」ボタンだけを出す
                         if st.button("📌 解除", key=f"unfav_{index}"):
-                            toggle_favorite(row['q'], fav_status)
+                            toggle_favorite(row['q'], "TRUE")
                     else:
+                        # 未お気に入りの時は「お気に入り」ボタンだけを出す
                         if st.button("📍 お気に入り", key=f"fav_{index}"):
-                            toggle_favorite(row['q'], fav_status)
+                            toggle_favorite(row['q'], "")
                 
                 with col_del:
-                    # 削除ボタン。押すと即座にシートから消えます
                     if st.button("🗑️ 削除", key=f"del_{index}"):
                         delete_note(row['q'])
 
-                # 詳細情報
+                # 以下、詳細表示
                 st.caption(f"出典: {row['source']}")
                 st.info(f"**問題:**\n{row['q']}")
                 st.success(f"**正解例:**\n{row['ans']}")
@@ -278,6 +263,7 @@ if mode == "復習ノート":
                     st.write(row['advice'])
                 with tab2:
                     st.write(row['keypoint'])
+                # st.divider() は削除済み
                 
                 # ここにあった st.divider() は削除しまし
         st.stop()
