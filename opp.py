@@ -263,10 +263,6 @@ if mode == "復習ノート":
                     st.write(row['keypoint'])
         
             st.divider()
-    
-                # 削除ボタン（スプレッドシート側は手動で消してもらう案内）
-                if st.button(f"🗑️ 削除", key=f"del_{index}"):
-                    st.warning("スプレッドシートから直接データを削除してください。")
         st.stop()
 
 elif mode == "問題演習":
