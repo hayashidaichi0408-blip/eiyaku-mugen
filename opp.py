@@ -9,62 +9,50 @@ import streamlit as st
 from streamlit_gsheets import GSheetsConnection # ←【追加】一番上の方に
 import pandas as pd
 
-# --- 例：authを作っている部分 ---
-import streamlit_authenticator as stauth
-import yaml
-from yaml.loader import SafeLoader
-
-# 設定ファイルを読み込む処理
-# ファイルを開くのではなく、Secretsから直接読み込む
-config = st.secrets["auth_config"]
-
-# ここで auth オブジェクトを作っている必要があります
-auth = stauth.Authenticate(
-    config['credentials'],
-    config['cookie']['name'],
-    config['cookie']['key'],
-    config['cookie']['expiry_days']
-)
-
-# これがあるから、下の方で auth.logout() が使えるようになります
-
+# 認証用の auth オブジェクトは不要になったので削除し、
+# ログアウト時にセッションをクリアするだけの処理にします。
+def logout():
+    st.session_state.connected = False
+    st.session_state["user_info"] = None
+    st.rerun()
 # --- 接続設定（関数の外、上の方に書く） ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# データを読み込むための関数を定義（これが無いとエラーになります）
+# --- データの読み書き（スプレッドシート専用版） ---
+
 def load_notes():
+    if "user_info" not in st.session_state:
+        return []
     try:
-        # スプレッドシートの「Sheet1」からデータを読み込む
+        # スプレッドシートから最新データを読み込む
         df = conn.read(worksheet="Sheet1")
-        # ログイン中のユーザー（email）のデータだけをフィルターする
-        # ※もしemail列がない場合は、この1行は消してください
-        user_df = df[df['email'] == st.session_state.user_email]
+        user_email = st.session_state["user_info"]["email"]
+        # メールアドレスで自分のデータだけを取り出す
+        user_df = df[df['email'] == user_email]
         return user_df.to_dict('records')
-    except Exception as e:
-        # まだデータが1件もない場合やエラーの時は空のリストを返す
+    except:
+        # まだデータがない時などは空のリストを返す
         return []
 
-# --- 既存の英訳処理のあと、保存する部分 ---
-def save_data(email, q, ans, advice):
-    # 1. 現在のスプレッドシートの内容を読み込む
-    # worksheetの名前（左下のタブ名）が「Sheet1」ならそのままでOK
-    df = conn.read(worksheet="Sheet1")
-    
-    # 2. 新しい行を作る
-    new_data = pd.DataFrame([{
-        "email": email,
-        "q": q,
-        "ans": ans,
-        "advice": advice
-    }])
-    
-    # 3. 既存のデータと合体させる
-    updated_df = pd.concat([df, new_data], ignore_index=True)
-    
-    # 4. スプレッドシートを更新する
-    conn.update(worksheet="Sheet1", data=updated_df)
-    st.success("スプレッドシートに保存しました！")
-
+def save_data_to_sheets(q, ans, advice, keypoint, source):
+    try:
+        # 現在のシートを読み込み
+        df = conn.read(worksheet="Sheet1")
+        # 新しい行を作成
+        new_row = pd.DataFrame([{
+            "email": st.session_state["user_info"]["email"],
+            "q": q,
+            "ans": ans,
+            "advice": advice,
+            "keypoint": keypoint,
+            "source": source
+        }])
+        # 合体させてスプレッドシートを更新
+        updated_df = pd.concat([df, new_row], ignore_index=True)
+        conn.update(worksheet="Sheet1", data=updated_df)
+        st.toast("スプレッドシートに保存しました！")
+    except Exception as e:
+        st.error(f"保存エラー: {e}")
 
 # --- 1. 認証設定（直接リンク方式） ---
 def get_login_url():
@@ -152,32 +140,6 @@ else:
 # --- 復習ノートの保存・読み込み関数 (ユーザー別に修正) ---
 # ファイル名をユーザーごとにユニークにする
 SAVE_FILE = f"notes_{user_email}.json"
-
-# --- 修正版：復習ノートの保存・読み込み関数 ---
-
-def load_notes():
-    # ログインしていない場合は空のリストを返す
-    if "user_info" not in st.session_state:
-        return []
-    
-    # ユーザーのメールアドレスをファイル名に使う
-    user_email = st.session_state["user_info"]["email"]
-    filename = f"notes_{user_email}.json"
-    
-    if os.path.exists(filename):
-        with open(filename, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return []
-
-def save_notes(notes):
-    if "user_info" not in st.session_state:
-        return
-    
-    user_email = st.session_state["user_info"]["email"]
-    filename = f"notes_{user_email}.json"
-    
-    with open(filename, "w", encoding="utf-8") as f:
-        json.dump(notes, f, ensure_ascii=False, indent=4)
 
 # Gemini API設定
 API_KEY = st.secrets["GEMINI_API_KEY"]
