@@ -31,18 +31,18 @@ if not st.session_state.connected:
     
     # ログインボタン（リンク）を表示
     login_url = get_login_url()
-    st.markdown(f'<a href="{login_url}" target="_blank" style="text-decoration:none; background-color:#4285F4; color:white; padding:12px 24px; border-radius:5px; font-weight:bold;">Googleでログインする</a>', unsafe_allow_html=True)
+    st.markdown(f'<a href="{login_url}" target="_top" style="text-decoration:none; background-color:#4285F4; color:white; padding:12px 24px; border-radius:5px; font-weight:bold;">Googleでログインする</a>', unsafe_allow_html=True)
 
-    # URLにcodeが含まれていたら「ログインボタンを押して戻ってきた」と判断
     if "code" in st.query_params:
-        # 1. ログイン成功の処理（ここはそのまま）
+        # codeを取得（後で名前取得に使うために保存しておくと良いです）
+        auth_code = st.query_params["code"]
+        
+        # ログイン済みにする
         st.session_state.connected = True
-        st.session_state["user_info"] = {"email": "test@example.com", "name": "User"} 
+        st.session_state["user_info"] = {"email": "test@example.com", "name": "User"} # 仮データ
         
-        # 2. 【追加】このタブ（ログイン用タブ）を自動で閉じる魔法
-        st.components.v1.html("<script>window.close();</script>", height=0)
-        
-        # 3. リフレッシュ
+        # URLをきれいにする（code=...を消して元のURLに戻す）
+        st.query_params.clear() 
         st.rerun()
     st.stop()
     
