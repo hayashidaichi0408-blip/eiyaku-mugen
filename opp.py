@@ -228,31 +228,31 @@ if mode == "復習ノート":
         st.caption(f"現在 {len(notes)} 問保存されています。📌マークを付けると一番上に表示されます。")
     
         # 修正ポイント4: index と row を使ってループを回す
-         for index, row in notes.iterrows():
+        for index, row in notes.iterrows():
                     # --- 1. 文字の状態を取得 ---
-                    fav_status = str(row.get('favorite', ""))
-                    pin_icon = "📌 " if fav_status == "TRUE" else ""
+                fav_status = str(row.get('favorite', ""))
+                pin_icon = "📌 " if fav_status == "TRUE" else ""
                     
-                    with st.expander(f"{pin_icon}{row['q']}"):
-                        st.caption(f"出典: {row['source']}")
+                with st.expander(f"{pin_icon}{row['q']}"):
+                    st.caption(f"出典: {row['source']}")
             
                         # --- 2. お気に入りボタンのラベル判定 ---
-                        btn_label = "📌 お気に入り解除" if fav_status == "TRUE" else "📍 お気に入りに追加"
+                    btn_label = "📌 お気に入り解除" if fav_status == "TRUE" else "📍 お気に入りに追加"
                         
                         # --- 3. ボタンが押された時の処理 ---
-                        if st.button(btn_label, key=f"fav_{index}"):
-                            toggle_favorite(row['q'], fav_status) # ここで作った関数を呼ぶ
+                    if st.button(btn_label, key=f"fav_{index}"):
+                        toggle_favorite(row['q'], fav_status) # ここで作った関数を呼ぶ
             
-                        st.info(f"**問題（和訳対象）:**\n{row['q']}")
-                        st.success(f"**正解例:**\n{row['ans']}")
+                    st.info(f"**問題（和訳対象）:**\n{row['q']}")
+                    st.success(f"**正解例:**\n{row['ans']}")
             
-                        tab1, tab2 = st.tabs(["💡 解説・添削", "📌 ポイント"])
-                        with tab1:
-                            st.write(row['advice'])
-                        with tab2:
-                            st.write(row['keypoint'])
+                    tab1, tab2 = st.tabs(["💡 解説・添削", "📌 ポイント"])
+                    with tab1:
+                        st.write(row['advice'])
+                    with tab2:
+                        st.write(row['keypoint'])
             
-                        st.divider()
+                    st.divider()
     
                 # 削除ボタン（スプレッドシート側は手動で消してもらう案内）
                 if st.button(f"🗑️ 削除", key=f"del_{index}"):
