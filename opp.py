@@ -5,6 +5,34 @@ from data import DATA
 import json
 import os
 import requests  # ← これを追加
+import streamlit as st
+from streamlit_gsheets import GSheetsConnection # ←【追加】一番上の方に
+import pandas as pd
+
+# --- 接続設定（関数の外、上の方に書く） ---
+conn = st.connection("gsheets", type=GSheetsConnection)
+
+# --- 既存の英訳処理のあと、保存する部分 ---
+def save_data(email, q, ans, advice):
+    # 1. 現在のスプレッドシートの内容を読み込む
+    # worksheetの名前（左下のタブ名）が「Sheet1」ならそのままでOK
+    df = conn.read(worksheet="Sheet1")
+    
+    # 2. 新しい行を作る
+    new_data = pd.DataFrame([{
+        "email": email,
+        "q": q,
+        "ans": ans,
+        "advice": advice
+    }])
+    
+    # 3. 既存のデータと合体させる
+    updated_df = pd.concat([df, new_data], ignore_index=True)
+    
+    # 4. スプレッドシートを更新する
+    conn.update(worksheet="Sheet1", data=updated_df)
+    st.success("スプレッドシートに保存しました！")
+
 
 # --- 1. 認証設定（直接リンク方式） ---
 def get_login_url():
