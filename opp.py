@@ -79,9 +79,14 @@ if not st.session_state.connected:
     
     
 
-# ユーザー情報の取得
-user_email = st.session_state["user_info"]["email"]
-user_name = st.session_state["user_info"]["name"]
+# ユーザー情報の取得（ログインしている場合のみ）
+if st.session_state.connected:
+    user_email = st.session_state["user_info"]["email"]
+    user_name = st.session_state["user_info"]["name"]
+else:
+    # ログインしていない時は仮の値を置くか、以降の処理を止める
+    user_email = None
+    user_name = None
 
 
 # --- 復習ノートの保存・読み込み関数 (ユーザー別に修正) ---
