@@ -33,13 +33,49 @@ if not st.session_state.connected:
     login_url = get_login_url()
     st.markdown(f'<a href="{login_url}" target="_blank" style="text-decoration:none; background-color:#4285F4; color:white; padding:12px 24px; border-radius:5px; font-weight:bold;">Googleでログインする</a>', unsafe_allow_html=True)
     
-    # URLにcodeが含まれていたら「ログインボタンを押して戻ってきた」と判断
+   # URLにcodeが含まれていたら「ログインボタンを押して戻ってきた」と判断
     if "code" in st.query_params:
-        # ※本来はここで名前を取得しますが、まずは「403が出ないか」を確認！
-        st.session_state.connected = True
-        st.session_state["user_info"] = {"email": "test@example.com", "name": "User"} # 仮のデータ
-        st.rerun()
-    st.stop()
+        auth_code = st.query_params["code"]
+        
+        # --- 1. codeをトークンに交換する ---
+        token_url = "https://oauth2.googleapis.com/token"
+        data = {
+            "code": auth_code,
+            "client_id": st.secrets["GOOGLE_CLIENT_ID"],
+            "client_secret": st.secrets["GOOGLE_CLIENT_SECRET"], # Secretsにこれも必要！
+            "redirect_uri": st.secrets["REDIRECT_URI"],
+            "grant_type": "authorization_code",
+        }
+        
+        try:
+            # Googleに問い合わせ
+            res = requests.post(token_url, data=data)
+            tokens = res.json()
+            access_token = tokens.get("access_token")
+
+            # --- 2. アクセストークンを使ってユーザー情報を取得する ---
+            user_info_res = requests.get(
+                "https://www.googleapis.com/oauth2/v1/userinfo",
+                headers={"Authorization": f"Bearer {access_token}"}
+            )
+            user_info = user_info_res.json()
+
+            # 本物の情報をセッションに保存！
+            st.session_state.connected = True
+            st.session_state["user_info"] = {
+                "email": user_info.get("email"),
+                "name": user_info.get("name")
+            }
+            
+            # 復習ノートをロード
+            st.session_state.saved_notes = load_notes()
+            
+            # URLをきれいにする
+            st.query_params.clear()
+            st.rerun()
+
+        except Exception as e:
+            st.error(f"認証に失敗しました: {e}")
     
     
 
@@ -52,16 +88,31 @@ user_name = st.session_state["user_info"]["name"]
 # ファイル名をユーザーごとにユニークにする
 SAVE_FILE = f"notes_{user_email}.json"
 
+# --- 修正版：復習ノートの保存・読み込み関数 ---
+
 def load_notes():
-    if os.path.exists(SAVE_FILE):
-        with open(SAVE_FILE, "r", encoding="utf-8") as f:
+    # ログインしていない場合は空のリストを返す
+    if "user_info" not in st.session_state:
+        return []
+    
+    # ユーザーのメールアドレスをファイル名に使う
+    user_email = st.session_state["user_info"]["email"]
+    filename = f"notes_{user_email}.json"
+    
+    if os.path.exists(filename):
+        with open(filename, "r", encoding="utf-8") as f:
             return json.load(f)
     return []
 
 def save_notes(notes):
-    with open(SAVE_FILE, "w", encoding="utf-8") as f:
+    if "user_info" not in st.session_state:
+        return
+    
+    user_email = st.session_state["user_info"]["email"]
+    filename = f"notes_{user_email}.json"
+    
+    with open(filename, "w", encoding="utf-8") as f:
         json.dump(notes, f, ensure_ascii=False, indent=4)
-
 
 # Gemini API設定
 API_KEY = st.secrets["GEMINI_API_KEY"]
