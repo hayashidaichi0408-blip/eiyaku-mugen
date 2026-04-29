@@ -18,12 +18,12 @@ def get_login_url():
         f"access_type=offline&prompt=select_account"
     )
     return url
-    print("1")
+    
 
 # ログイン状態の確認
 if "connected" not in st.session_state:
     st.session_state.connected = False
-print("2")
+
 
 if not st.session_state.connected:
     st.title("🚀 無限英訳サバイバル")
@@ -31,7 +31,7 @@ if not st.session_state.connected:
     
     # ログインボタン（リンク）を表示
     login_url = get_login_url()
-    st.markdown(f'<a href="{login_url}" target="_self" style="text-decoration:none; background-color:#4285F4; color:white; padding:12px 24px; border-radius:5px; font-weight:bold;">Googleでログインする</a>', unsafe_allow_html=True)
+    st.markdown(f'<a href="{login_url}" target="_blank" style="text-decoration:none; background-color:#4285F4; color:white; padding:12px 24px; border-radius:5px; font-weight:bold;">Googleでログインする</a>', unsafe_allow_html=True)
     
     # URLにcodeが含まれていたら「ログインボタンを押して戻ってきた」と判断
     if "code" in st.query_params:
@@ -40,12 +40,12 @@ if not st.session_state.connected:
         st.session_state["user_info"] = {"email": "test@example.com", "name": "User"} # 仮のデータ
         st.rerun()
     st.stop()
-    print("3")
+    
 
 # ユーザー情報の取得
 user_email = st.session_state["user_info"]["email"]
 user_name = st.session_state["user_info"]["name"]
-print("4")
+
 
 # --- 復習ノートの保存・読み込み関数 (ユーザー別に修正) ---
 # ファイル名をユーザーごとにユニークにする
@@ -60,7 +60,7 @@ def load_notes():
 def save_notes(notes):
     with open(SAVE_FILE, "w", encoding="utf-8") as f:
         json.dump(notes, f, ensure_ascii=False, indent=4)
-print("5")
+
 
 # Gemini API設定
 API_KEY = st.secrets["GEMINI_API_KEY"]
