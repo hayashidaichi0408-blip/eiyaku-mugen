@@ -24,14 +24,19 @@ def load_notes():
     if "user_info" not in st.session_state:
         return []
     try:
-        # スプレッドシートから最新データを読み込む
+        # スプレッドシートから全データを読み込む
         df = conn.read(worksheet="Sheet1")
+        
+        # ログイン中のユーザーのメールアドレスを取得
         user_email = st.session_state["user_info"]["email"]
-        # メールアドレスで自分のデータだけを取り出す
-        user_df = df[df['email'] == user_email]
+        
+        # 【重要】email列がログイン中のメールアドレスと一致するものだけを抽出
+        # 文字列として比較するために .astype(str) を入れるとより確実です
+        user_df = df[df['email'].astype(str) == str(user_email)]
+        
         return user_df.to_dict('records')
-    except:
-        # まだデータがない時などは空のリストを返す
+    except Exception as e:
+        # エラーが起きたら空のリストを返す
         return []
 
 def save_data_to_sheets(q, ans, advice, keypoint, source):
@@ -148,6 +153,7 @@ client = genai.Client(api_key=API_KEY)
 st.set_page_config(page_title="無限英訳", layout="centered")
 
 # --- 2. セッション状態の初期化 ---
+# これを「ログイン成功時」の処理の中に移動するか、以下のように書き換えます
 if 'saved_notes' not in st.session_state:
     st.session_state.saved_notes = load_notes()
 # (以下、元のコードと同じ)
