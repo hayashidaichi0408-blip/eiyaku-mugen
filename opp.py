@@ -12,6 +12,19 @@ import pandas as pd
 # --- 接続設定（関数の外、上の方に書く） ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
+# データを読み込むための関数を定義（これが無いとエラーになります）
+def load_notes():
+    try:
+        # スプレッドシートの「Sheet1」からデータを読み込む
+        df = conn.read(worksheet="Sheet1")
+        # ログイン中のユーザー（email）のデータだけをフィルターする
+        # ※もしemail列がない場合は、この1行は消してください
+        user_df = df[df['email'] == st.session_state.user_email]
+        return user_df.to_dict('records')
+    except Exception as e:
+        # まだデータが1件もない場合やエラーの時は空のリストを返す
+        return []
+
 # --- 既存の英訳処理のあと、保存する部分 ---
 def save_data(email, q, ans, advice):
     # 1. 現在のスプレッドシートの内容を読み込む
