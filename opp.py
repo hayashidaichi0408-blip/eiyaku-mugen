@@ -459,13 +459,6 @@ elif mode == "問題演習":
                     if st.button("🎉 章選択に戻る"):
                         st.session_state.section = None
                         st.rerun()
-                else:
-                    sec_key = f"{st.session_state.grade}_{st.session_state.level}_{st.session_state.chapter}_{st.session_state.section}"
-                    st.session_state.cleared[sec_key] = True
-                    st.balloons()
-                    st.success("🎉 この節のすべての問題をクリアしました！")
-                    if st.button("🎉 章選択に戻る"):
-                        st.session_state.section = None
-                        st.rerun()
+
 #  https://english-opp-lczytel8teegbpzptqgwe9.streamlit.app/
 #https://eiyaku-mugen.streamlit.app/
