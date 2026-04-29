@@ -229,29 +229,27 @@ if mode == "復習ノート":
     
     # --- 復習ノートの表示エリア ---
     for index, row in notes.iterrows():
-            # 大文字小文字の揺れを防ぐため upper() で判定
-            fav_status = str(row.get('favorite', "")).upper()
-            is_fav = (fav_status == "TRUE")
-            
-            pin_icon = "📌 " if is_fav else ""
-            
-            with st.expander(f"{pin_icon}{row['q']}"):
-                col_fav, col_del, col_empty = st.columns([2, 2, 4])
+                # 文字列にして取得
+                val = str(row.get('favorite', ""))
                 
-                with col_fav:
-                    # ここで確実に出し分けます
-                    if is_fav:
-                        # お気に入り済みの時は「解除」ボタンだけを出す
-                        if st.button("📌 解除", key=f"unfav_{index}"):
-                            toggle_favorite(row['q'], "TRUE")
-                    else:
-                        # 未お気に入りの時は「お気に入り」ボタンだけを出す
-                        if st.button("📍 お気に入り", key=f"fav_{index}"):
-                            toggle_favorite(row['q'], "")
+                # 「TRUE」という文字、または「1」や「1.0」になっていても「お気に入り」と判定する
+                is_already_true = (val.upper() == "TRUE" or val == "1" or val == "1.0")
                 
-                with col_del:
-                    if st.button("🗑️ 削除", key=f"del_{index}"):
-                        delete_note(row['q'])
+                pin_icon = "📌 " if is_already_true else ""
+                
+                with st.expander(f"{pin_icon}{row['q']}"):
+                    col_fav, col_del, col_empty = st.columns([2, 2, 4])
+                    
+                    with col_fav:
+                        if is_already_true:
+                            # お気に入り済みの判定が通れば、こっちのボタンが出る
+                            if st.button("📌 解除", key=f"unfav_{index}"):
+                                toggle_favorite(row['q'], "TRUE")
+                        else:
+                            # そうでなければ、こっちが出る
+                            if st.button("📍 お気に入り", key=f"fav_{index}"):
+                                toggle_favorite(row['q'], "")
+                            
 
                 # 以下、詳細表示
                 st.caption(f"出典: {row['source']}")
