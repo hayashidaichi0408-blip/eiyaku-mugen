@@ -251,11 +251,11 @@ if mode == "復習ノート":
             pin_icon = "📌 " if fav_status == "TRUE" else ""
             
             with st.expander(f"{pin_icon}{row['q']}"):
-                # ボタンを配置するカラム（比率を調整して右に寄せる）
-                col_fav, col_del, col_empty = st.columns([2.5, 1.5, 4])
+                # ボタンを横に並べる（比率 2:2:4 で右側を空ける）
+                col_fav, col_del, col_empty = st.columns([2, 2, 4])
                 
                 with col_fav:
-                    # お気に入り状態によって「ボタンそのもの」を切り替える
+                    # お気に入り状態によってボタンを出し分け
                     if fav_status == "TRUE":
                         if st.button("📌 解除", key=f"unfav_{index}"):
                             toggle_favorite(row['q'], fav_status)
@@ -264,10 +264,11 @@ if mode == "復習ノート":
                             toggle_favorite(row['q'], fav_status)
                 
                 with col_del:
-                    # 削除ボタン。押したら即座にスプレッドシートから消える
+                    # 削除ボタン。押すと即座にシートから消えます
                     if st.button("🗑️ 削除", key=f"del_{index}"):
                         delete_note(row['q'])
 
+                # 詳細情報
                 st.caption(f"出典: {row['source']}")
                 st.info(f"**問題:**\n{row['q']}")
                 st.success(f"**正解例:**\n{row['ans']}")
@@ -277,8 +278,8 @@ if mode == "復習ノート":
                     st.write(row['advice'])
                 with tab2:
                     st.write(row['keypoint'])
-        
-            st.divider()
+                
+                # ここにあった st.divider() は削除しまし
         st.stop()
 
 elif mode == "問題演習":
