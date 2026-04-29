@@ -196,8 +196,9 @@ if mode == "復習ノート":
     st.session_state.saved_notes = load_notes()
     notes = st.session_state.saved_notes
 
-    if not notes:
-        st.info("まだ保存された問題はありません。演習で「🌟 復習ノートに保存」を押してみましょう！")
+    # .empty を使うのが Pandas の正しいマナーです
+    if notes.empty:
+        st.info("まだ復習ノートにデータがありません。")
     else:
         # お気に入り(pinned=True)を上に並べるための準備
         # スプレッドシートから読み込んだ直後は pinned が無い場合があるので補完
