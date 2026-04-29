@@ -19,7 +19,6 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 # --- データの読み書き（スプレッドシート専用版） ---
 
 def load_notes():
-    # ログインしていない、または user_info が空なら、エラーを出さずに空の表を返す
     if "user_info" not in st.session_state or st.session_state["user_info"] is None:
         return pd.DataFrame()
     
@@ -29,11 +28,35 @@ def load_notes():
             return pd.DataFrame()
 
         user_email = str(st.session_state["user_info"]["email"]).strip().lower()
-        user_df = df[df['email'].astype(str).str.strip().str.lower() == user_email]
+        user_df = df[df['email'].astype(str).str.strip().str.lower() == user_email].copy()
+
+        # favorite列（お気に入り文字）がなければ作成
+        if 'favorite' not in user_df.columns:
+            user_df['favorite'] = ""
+        
+        # 文字が入っている行を優先して上に並べ替える
+        user_df = user_df.sort_values(by='favorite', ascending=False)
+        
         return user_df
     except Exception:
-        # ログイン前などはここを通る可能性があるが、画面にエラーを出さない
         return pd.DataFrame()
+
+def toggle_favorite(target_q, current_val):
+    try:
+        all_df = conn.read(worksheet="Sheet1")
+        user_email = st.session_state["user_info"]["email"]
+        
+        mask = (all_df['email'] == user_email) & (all_df['q'] == target_q)
+        
+        # 「TRUE」という文字を書き込むか、消すか
+        new_val = "" if current_val == "TRUE" else "TRUE"
+        all_df.loc[mask, 'favorite'] = new_val
+        
+        conn.update(worksheet="Sheet1", data=all_df)
+        st.cache_data.clear()
+        st.rerun()
+    except Exception as e:
+        st.error(f"お気に入りの更新に失敗しました: {e}")
 
 def save_data_to_sheets(q, ans, advice, keypoint, source):
     try:
@@ -205,29 +228,31 @@ if mode == "復習ノート":
         st.caption(f"現在 {len(notes)} 問保存されています。📌マークを付けると一番上に表示されます。")
     
         # 修正ポイント4: index と row を使ってループを回す
-        for index, row in notes.iterrows():
-            # row['pinned'] が True ならピンを表示
-            pin_icon = "📌 " if row.get('pinned', False) else ""
+         for index, row in notes.iterrows():
+                    # --- 1. 文字の状態を取得 ---
+                    fav_status = str(row.get('favorite', ""))
+                    pin_icon = "📌 " if fav_status == "TRUE" else ""
+                    
+                    with st.expander(f"{pin_icon}{row['q']}"):
+                        st.caption(f"出典: {row['source']}")
             
-            with st.expander(f"{pin_icon}{row['q']}"):
-                st.caption(f"出典: {row['source']}")
-    
-                # お気に入りボタン（今は見た目だけですが、エラー回避のために配置）
-                btn_label = "📌 お気に入り解除" if row.get('pinned', False) else "📍 お気に入りに追加"
-                if st.button(btn_label, key=f"pin_{index}"):
-                    st.toast("お気に入り機能は次のステップで完全実装します！")
-                    st.rerun()
-    
-                st.info(f"**問題（和訳対象）:**\n{row['q']}")
-                st.success(f"**正解例:**\n{row['ans']}")
-    
-                tab1, tab2 = st.tabs(["💡 解説・添削", "📌 ポイント"])
-                with tab1:
-                    st.write(row['advice'])
-                with tab2:
-                    st.write(row['keypoint'])
-    
-                st.divider()
+                        # --- 2. お気に入りボタンのラベル判定 ---
+                        btn_label = "📌 お気に入り解除" if fav_status == "TRUE" else "📍 お気に入りに追加"
+                        
+                        # --- 3. ボタンが押された時の処理 ---
+                        if st.button(btn_label, key=f"fav_{index}"):
+                            toggle_favorite(row['q'], fav_status) # ここで作った関数を呼ぶ
+            
+                        st.info(f"**問題（和訳対象）:**\n{row['q']}")
+                        st.success(f"**正解例:**\n{row['ans']}")
+            
+                        tab1, tab2 = st.tabs(["💡 解説・添削", "📌 ポイント"])
+                        with tab1:
+                            st.write(row['advice'])
+                        with tab2:
+                            st.write(row['keypoint'])
+            
+                        st.divider()
     
                 # 削除ボタン（スプレッドシート側は手動で消してもらう案内）
                 if st.button(f"🗑️ 削除", key=f"del_{index}"):
