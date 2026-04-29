@@ -415,14 +415,16 @@ elif mode == "問題演習":
                 if is_already_saved:
                     st.warning("⚠️ この問題は既に保存されています。")
                 else:
-                    note = {
-                        "q": current_q, "ans": res['answer'], "advice": res['improve'],
-                        "keypoint": res['keypoint'],
-                        "source": f"{st.session_state.grade} > {st.session_state.level} > {st.session_state.chapter} > {st.session_state.section}"
-                    }
-                    st.session_state.saved_notes.append(note)
-                    save_notes(st.session_state.saved_notes)
-                    st.toast("ファイルを更新しました！")
+                    # スプレッドシートに保存する関数を呼び出す
+                    save_data_to_sheets(
+                        current_q, 
+                        res['answer'], 
+                        res['improve'], 
+                        res['keypoint'],
+                        f"{st.session_state.grade} > {st.session_state.level} > {st.session_state.chapter}"
+                    )
+                    # 保存後に画面上のリストも最新にする
+                    st.session_state.saved_notes = load_notes()
 
             if res["score"] >= 8:
                 if q_idx + 1 < len(questions):
