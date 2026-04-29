@@ -41,9 +41,10 @@ def load_notes():
 
 def save_data_to_sheets(q, ans, advice, keypoint, source):
     try:
-        # 現在のシートを読み込み
+        st.write("デバッグ: 保存開始") # これを一時的に追加
         df = conn.read(worksheet="Sheet1")
-        # 新しい行を作成
+        st.write("デバッグ: 読み込み完了") # これを一時的に追加
+        
         new_row = pd.DataFrame([{
             "email": st.session_state["user_info"]["email"],
             "q": q,
@@ -52,12 +53,12 @@ def save_data_to_sheets(q, ans, advice, keypoint, source):
             "keypoint": keypoint,
             "source": source
         }])
-        # 合体させてスプレッドシートを更新
+        
         updated_df = pd.concat([df, new_row], ignore_index=True)
         conn.update(worksheet="Sheet1", data=updated_df)
         st.toast("スプレッドシートに保存しました！")
     except Exception as e:
-        st.error(f"保存エラー: {e}")
+        st.error(f"保存エラー: {e}") # eの中身をしっかり表示
 
 # --- 1. 認証設定（直接リンク方式） ---
 def get_login_url():
