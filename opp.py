@@ -143,8 +143,7 @@ else:
 
 
 # --- 復習ノートの保存・読み込み関数 (ユーザー別に修正) ---
-# ファイル名をユーザーごとにユニークにする
-SAVE_FILE = f"notes_{user_email}.json"
+
 
 # Gemini API設定
 API_KEY = st.secrets["GEMINI_API_KEY"]
@@ -153,9 +152,7 @@ client = genai.Client(api_key=API_KEY)
 st.set_page_config(page_title="無限英訳", layout="centered")
 
 # --- 2. セッション状態の初期化 ---
-# これを「ログイン成功時」の処理の中に移動するか、以下のように書き換えます
-if 'saved_notes' not in st.session_state:
-    st.session_state.saved_notes = load_notes()
+
 # (以下、元のコードと同じ)
 if 'cleared' not in st.session_state:
     st.session_state.cleared = {}
