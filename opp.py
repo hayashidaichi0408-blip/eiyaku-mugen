@@ -212,7 +212,7 @@ if mode == "復習ノート":
                 btn_label = "📌 お気に入り解除" if note.get('pinned') else "📍 お気に入りに追加"
                 if st.button(btn_label, key=f"pin_{original_idx}"):
                     st.session_state.saved_notes[original_idx]['pinned'] = not note.get('pinned')
-                    save_notes(st.session_state.saved_notes)
+                    #save_notes(st.session_state.saved_notes)
                     st.rerun()
 
                 st.info(f"**問題（和訳対象）:**\n{note['q']}")
@@ -228,7 +228,7 @@ if mode == "復習ノート":
 
                 if st.button(f"🗑️ 削除", key=f"del_{original_idx}"):
                     st.session_state.saved_notes.pop(original_idx)
-                    save_notes(st.session_state.saved_notes)
+                    #save_notes(st.session_state.saved_notes)
                     st.rerun()
     st.stop()
 
