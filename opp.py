@@ -60,6 +60,21 @@ def toggle_favorite(target_q, current_val):
         st.rerun()
     except Exception as e:
         st.error(f"お気に入りの更新に失敗しました: {e}")
+
+def delete_note(target_q):
+    try:
+        all_df = conn.read(worksheet="Sheet1")
+        user_email = st.session_state["user_info"]["email"]
+        
+        # 削除対象以外の行だけを残す（フィルタリング）
+        new_df = all_df[~((all_df['email'] == user_email) & (all_df['q'] == target_q))]
+        
+        # スプレッドシートを更新
+        conn.update(worksheet="Sheet1", data=new_df)
+        st.cache_data.clear()
+        st.rerun()
+    except Exception as e:
+        st.error(f"削除に失敗しました: {e}")
         
 def save_data_to_sheets(q, ans, advice, keypoint, source):
     try:
@@ -236,26 +251,27 @@ if mode == "復習ノート":
             pin_icon = "📌 " if fav_status == "TRUE" else ""
             
             with st.expander(f"{pin_icon}{row['q']}"):
-                # ① ここで横割りを設定
-                col_fav, col_del, col_empty = st.columns([3, 1, 4])
+                # ボタンを配置するカラム（比率を調整して右に寄せる）
+                col_fav, col_del, col_empty = st.columns([2.5, 1.5, 4])
                 
-                # ② お気に入りボタン（col_favの中にインデントして入れる）
                 with col_fav:
-                    btn_label = "📌 解除" if fav_status == "TRUE" else "📍 お気に入り"
-                    if st.button(btn_label, key=f"fav_{index}"):
-                        toggle_favorite(row['q'], fav_status)
+                    # お気に入り状態によって「ボタンそのもの」を切り替える
+                    if fav_status == "TRUE":
+                        if st.button("📌 解除", key=f"unfav_{index}"):
+                            toggle_favorite(row['q'], fav_status)
+                    else:
+                        if st.button("📍 お気に入り", key=f"fav_{index}"):
+                            toggle_favorite(row['q'], fav_status)
                 
-                # ③ 削除ボタン（col_delの中にインデントして入れる）
                 with col_del:
-                    if st.button("🗑️", key=f"del_{index}"): # ← ここの行頭スペースに注意！
-                        st.warning("スプレッドシートから直接削除してください。")
+                    # 削除ボタン。押したら即座にスプレッドシートから消える
+                    if st.button("🗑️ 削除", key=f"del_{index}"):
+                        delete_note(row['q'])
 
-                # ④ 以下、既存の解説部分（with st.expander の中の高さに揃える）
                 st.caption(f"出典: {row['source']}")
                 st.info(f"**問題:**\n{row['q']}")
-                # ...（以下、正解例などの表示はそのまま）...
                 st.success(f"**正解例:**\n{row['ans']}")
-        
+                
                 tab1, tab2 = st.tabs(["💡 解説・添削", "📌 ポイント"])
                 with tab1:
                     st.write(row['advice'])
