@@ -41,7 +41,7 @@ def load_notes():
         except Exception as e:
             # エラーが起きたら画面に表示
             st.error(f"データの読み込み中にエラーが発生しました: {e}")
-        return pd.DataFrame()
+            return pd.DataFrame()
 
 def save_data_to_sheets(q, ans, advice, keypoint, source):
     try:
