@@ -24,25 +24,24 @@ def load_notes():
     if "user_info" not in st.session_state:
         return []
     try:
-        # 1. スプレッドシートを読み込む
-        df = conn.read(worksheet="Sheet1")
-        
-        # もしシートが空っぽだったら、空のデータを返す
-        if df.empty:
+            # スプレッドシートを読み込む（PandasのDataFrameが返ってきます）
+            df = conn.read(worksheet="Sheet1")
+            
+            if df is None or df.empty:
+                return pd.DataFrame()
+    
+            # ログイン中のユーザーのメールアドレスを取得（念のため小文字に統一）
+            user_email = str(st.session_state["user_info"]["email"]).strip().lower()
+            
+            # email列が自分のアドレスと一致するものだけを抽出
+            # .str.strip().str.lower() を入れることで、保存時の微妙なズレも許容します
+            user_df = df[df['email'].astype(str).str.strip().str.lower() == user_email]
+            
+            return user_df
+        except Exception as e:
+            # エラーが起きたら画面に表示
+            st.error(f"データの読み込み中にエラーが発生しました: {e}")
             return pd.DataFrame()
-
-        # 2. ログイン中の自分のメールアドレスを取得（小文字に揃える）
-        user_email = str(st.session_state["user_info"]["email"]).strip().lower()
-        
-        # 3. シートの 'email' 列も小文字＆スペース削除して比較
-        # こうすることで、"Daichi@..." と "daichi@..." のズレを防ぎます
-        user_df = df[df['email'].astype(str).str.strip().str.lower() == user_email]
-        
-        return user_df
-
-    except Exception as e:
-        st.error(f"読み込みエラーが発生しました: {e}")
-        return pd.DataFrame()
 
 def save_data_to_sheets(q, ans, advice, keypoint, source):
     try:
@@ -195,38 +194,38 @@ if mode == "復習ノート":
     # 最新のデータをスプレッドシートから読み込む
     st.session_state.saved_notes = load_notes()
     notes = st.session_state.saved_notes
+    
+    notes = load_notes()
 
     # .empty を使うのが Pandas の正しいマナーです
-    if notes.empty:
+   if notes.empty:
         st.info("まだ復習ノートにデータがありません。")
     else:
-        # お気に入り(pinned=True)を上に並べるための準備
-        # スプレッドシートから読み込んだ直後は pinned が無い場合があるので補完
-        for n in notes:
-            if 'pinned' not in n:
-                n['pinned'] = False
+        # 1. pinned列がない場合に備えて補完（Pandas流の書き方）
+        if 'pinned' not in notes.columns:
+            notes['pinned'] = False
+        else:
+            notes['pinned'] = notes['pinned'].fillna(False)
 
-        sorted_notes = sorted(
-            enumerate(notes),
-            key=lambda x: x[1].get('pinned', False),
-            reverse=True
-        )
+        # 2. お気に入り(pinned=True)を上に並べ替え
+        notes = notes.sort_values(by='pinned', ascending=False)
 
         st.caption(f"現在 {len(notes)} 問保存されています。📌マークを付けると一番上に表示されます。")
 
-        for original_idx, note in sorted_notes:
-            pin_icon = "📌 " if note.get('pinned') else ""
-            # タイトルに問題文を表示
+        # 3. データの表示ループ (notes.iterrows() を使うのが正解)
+        for index, note in notes.iterrows():
+            pin_icon = "📌 " if note['pinned'] else ""
+            
             with st.expander(f"{pin_icon}{note['q']}"):
                 st.caption(f"出典: {note['source']}")
 
                 # --- お気に入りボタン ---
-                btn_label = "📌 お気に入り解除" if note.get('pinned') else "📍 お気に入りに追加"
-                if st.button(btn_label, key=f"pin_{original_idx}"):
-                    # 状態を反転させて保存（本来はスプレッドシートの更新が必要ですが、まずは画面上で切り替え）
-                    st.session_state.saved_notes[original_idx]['pinned'] = not note.get('pinned')
-                    # 【重要】スプレッドシートの「お気に入り状態」の更新は今後の課題として、
-                    # 今は rerun して並び替えを反映させます
+                # 注: 更新処理は複雑になるので、まずは見た目と rerun だけで構成
+                btn_label = "📌 お気に入り解除" if note['pinned'] else "📍 お気に入りに追加"
+                if st.button(btn_label, key=f"pin_{index}"):
+                    # ここでスプレッドシートを更新する処理が必要ですが、
+                    # ひとまず「動く」状態にするためにトースト表示だけにします
+                    st.toast("お気に入り状態の保存は、スプレッドシート連携の次のステップで実装しましょう！")
                     st.rerun()
 
                 st.info(f"**問題（和訳対象）:**\n{note['q']}")
@@ -241,13 +240,9 @@ if mode == "復習ノート":
                 st.divider()
 
                 # --- 削除ボタン ---
-                if st.button(f"🗑️ 削除", key=f"del_{original_idx}"):
-                    # リストから消して画面を更新
-                    st.session_state.saved_notes.pop(original_idx)
-                    # 本来はここでスプレッドシートからも消す処理が必要ですが、
-                    # まずはエラーが出る古い関数(save_notes)を呼ばないようにしてフリーズを防ぎます
-                    st.toast("画面から削除しました（スプレッドシート本体からは別途削除が必要です）")
-                    st.rerun()
+                if st.button(f"🗑️ 削除", key=f"del_{index}"):
+                    # スプレッドシートから行を消すのは少し工夫がいるので、まずは案内を出す形にします
+                    st.warning("スプレッドシートから直接データを削除してください。アプリからの削除機能は開発中です。")
     st.stop()
 
 elif mode == "問題演習":
